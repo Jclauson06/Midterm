@@ -1,0 +1,239 @@
+---
+title: "Midterm project"
+author: "Jake Clauson"
+date: "2025-03-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Timberwolves Shot Distribution Graphic (2013-2024)
+
+This report highlights key changes in shot selection trends for the Minnesota Timberwolves between 2013 and 2024, based on data visualizations of shot locations across this time period.
+
+```{r, warning=FALSE, message=FALSE, fig.width= 15, fig.height= 15, echo=FALSE}
+# Load necessary libraries
+library(nbastatR) # Used to obtain NBA shot data
+library(ggplot2) # Used to create visualizations (graph)
+library(dplyr) # Used for data manipulation
+library(png) # Used to load and display basketball court background
+
+Sys.setenv("VROOM_CONNECTION_SIZE" = 500000) #increase connection size 
+
+# Create an empty data frame to store all the shots data
+all_shots_data <- data.frame()
+
+# Loop through seasons 2013 to 2024
+for (season in 2013:2024) {
+  # Fetch shots data for each season
+  shots_data_season <- teams_shots(
+    teams = "Minnesota Timberwolves", # Specifies the team
+    season_types = "Regular Season", # Only considering Regular Season games
+    seasons = season,  # Get data for each season individually
+    measures = "FGA", # Obtain Field Goals Attempted (No Free throws)
+    nest_data = FALSE, # Do not retrieve nested lists
+    return_message = FALSE # Does not output lines to console
+  )
+  
+  # Add the season column to the data
+  shots_data_season$season <- season
+  
+  # Add the data to the all_shots_data data frame
+  all_shots_data <- bind_rows(all_shots_data, shots_data_season)
+}
+
+# Load the basketball court image
+court_image <- readPNG("basketball.png") # source:https://www.alamy.com/stock-photo-a4-size-vertical-basketball-court-line-vector-124487414.html?imageid=20E76199-2144-409D-B2D4-D15ED1EB534F&p=263635&pn=1&searchId=d28a7efbe1e05714bb5c79ed6ad9e5c6&searchtype=0
+
+# Create the faceted plot for all seasons (2013 to 2024)
+ggplot(all_shots_data, aes(x = locationX, y = locationY, color = factor(isShotMade))) +
+  # Add the basketball court image as the background
+  annotation_raster(court_image, xmin = -255, xmax = 255, ymin = -35, ymax = 835) +  # Adjust as needed
+  geom_point(alpha = 0.3, size = .7) + #change opacity and size
+  scale_color_manual(
+    values = c("navy", "green"),
+    labels = c("Missed Shot", "Made Shot"),
+    name = "Shot Outcome"
+  ) +
+  labs(
+    title = "Minnesota Timberwolves Shot Chart (2013-2024)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),  # Bigger and centered title
+    axis.title.x = element_blank(), 
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),           # no labels for all axis
+    axis.text.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.text = element_text(size = 15),   # Increase legend text size
+    legend.title = element_text(size = 20),  # Increase legend title size
+    legend.key.size = unit(1.5, "cm"),       # Adjust legend key size
+    strip.text = element_text(size = 15, face = "bold")  # Increase year labels above each graph
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(alpha = 5, size = 7))  # Make legend colors more opaque
+  ) +
+  coord_fixed(ratio = 1) +
+  facet_wrap(~ season) # facet wrap by seasons
+
+```
+
+## Key Findings:
+
+-   **Post-2020 Shift**: A significant decrease in long range 2 point shots after 2020.
+-   **Increased Three-Point Shots**: A large increase in 3 point shot attempts starting in 2020.
+-   **More Layups**: Layups saw a significant rise after 2020, reflecting changes in offensive strategies.
+-   **Shift in Offensive Philosophy**: A noticeable trend toward more efficient scoring methods (three pointers and layups).
+
+------------------------------------------------------------------------
+
+# Detailed Explanation
+
+## 1. Post-2020 Shift in Long-Range Two-Point Shots
+
+-   **Finding**: Long-range two-point attempts have dramatically decreased after 2020.
+
+-   **Explanation**: The decrease reflects a shift away from mid range shots in favor of more efficient scoring options, such as 3 point shots or layups. Teams are focusing on shot selection that maximizes points per possession.
+
+------------------------------------------------------------------------
+
+## 2. Increased Three-Point Attempts
+
+-   **Finding**: There has been a notable surge in three-point shot attempts starting around 2020.
+
+-   **Explanation**: The increase in 3 point attempts aligns with the NBA's continued evolution toward a perimeter oriented game. The value of the 3 point shot has grown as teams look for higher efficiency and spacing.
+
+------------------------------------------------------------------------
+
+## 3. Rise in Layups
+
+-   **Finding**: Layups have seen a substantial increase after 2020.
+
+-   **Explanation**: Increased offensive spacing, faster ball movement, and a focus on high percentage shots near the rim have contributed to this rise. Layups are often seen as a more efficient alternative to contested mid range shots.
+
+------------------------------------------------------------------------
+
+## 4. Shift in Offensive Philosophy
+
+-   **Finding**: A clear shift in offensive strategies occurred after 2020.
+
+-   **Explanation**: Teams have increasingly focused on scoring more efficiently, prioritizing three pointers and layups. This shift reflects the broader trend of teams optimizing for higher expected points per possession, moving away from inefficient shot types like long range twos.
+
+------------------------------------------------------------------------
+
+# Conclusion
+
+The trends observed between 2013 and 2024 show a significant evolution in the Timberwolve's offensive strategies. Understanding these changes can help inform team decisions, player development, and game planning.
+
+------------------------------------------------------------------------
+
+# Shot Distribution Graphic By Position
+
+This report presents the shot distribution trends by position group for the Minnesota Timberwolves comparing the years 2019 and 2024. The data reveals significant shifts in shot selection, particularly with respect to the roles of guards, forwards, and centers.
+
+```{r, warning=FALSE, message = FALSE, fig.width = 15, fig.height = 15, echo=FALSE}
+
+# Initialize empty dataframes
+all_shots_data <- data.frame()
+all_roster_data <- data.frame()
+
+# create the seasons to compare
+seasons_to_compare <- c(2019, 2024)
+
+# Loop through seasons to gather data
+for (season in seasons_to_compare) {
+  
+  # get shot data
+  shots_data_season <- teams_shots(
+    teams = "Minnesota Timberwolves",
+    season_types = "Regular Season",
+    seasons = season,
+    measures = "FGA",
+    nest_data = FALSE,
+    return_message = FALSE
+  )
+  
+  # get roster data
+  roster_data_season <- team_season_roster(
+    team = "Minnesota Timberwolves",
+    season = season,
+    return_message = FALSE
+  )
+  
+  # Add season column
+  shots_data_season$season <- season
+  roster_data_season$season <- season
+
+  # bind rows on dataframes
+  all_shots_data <- bind_rows(all_shots_data, shots_data_season)
+  all_roster_data <- bind_rows(all_roster_data, roster_data_season)
+}
+
+# Join both datasets on 'idPlayer'
+combined_data <- all_shots_data %>%
+  left_join(all_roster_data, by = c("idPlayer", "season")) %>%
+  select(idPlayer, groupPosition, locationX, locationY, isShotMade, season) %>%
+  filter(groupPosition %in% c("G", "F", "C"))  # Keep only Guards, Forwards, and Centers
+
+# Load the basketball court image
+court_image <- readPNG("basketball.png")
+
+# Create the combined shot chart
+ggplot(combined_data, aes(x = locationX, y = locationY)) +
+  annotation_raster(court_image, xmin = -255, xmax = 255, ymin = -35, ymax = 835) +  # Add court background and scale
+  geom_point(alpha = 0.5, size = 0.1, aes(color = groupPosition)) +  # Color by position
+  scale_color_manual(values = c("G" = "blue", "F" = "red", "C" = "purple")) +
+  labs(
+    title = "Minnesota Timberwolves Shot Chart (2019 vs 2024) Grouped by Position",
+    color = "Position"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 20),
+    legend.key.size = unit(1.5, "cm"),
+    strip.text = element_text(size = 15, face = "bold")
+    ) +
+  guides(color = guide_legend(override.aes = list(alpha = 3, size= 7))) +  
+  coord_fixed(ratio = 1) + 
+  facet_grid(groupPosition ~ season)  # Organize charts 
+
+```
+
+## Key Findings:
+
+-   **Center's Shot Decrease**: A marked decrease in the overall shot attempts for centers in 2024 compared to 2019, reflecting the modern trend of moving away from post up plays and focusing on floor spacing.
+-   **Forward's Shot Decline**: Forwards saw a decrease in total shot attempts in 2024, countering the trend of increased perimeter shooting. Their role in offensive schemes shifted, leading to fewer overall shot opportunities.
+-   **Guard's Increased Three Point Attempts**: Guards significantly increased their three point attempts in 2024, highlighting the ongoing shift in the NBA towards perimeter-oriented offenses.
+
+## Detailed Explanation
+
+### 1. Center's Shots Decrease
+
+-   **Finding**: In 2024, centers significantly decreased their shot attempts.
+-   **Explanation**: Modern NBA offenses prioritize spacing and perimeter shooting, which limits the center’s role as a focal point in scoring. In contrast, centers in 2019 played a larger role in post up and mid range shooting.
+
+### 2. Forward's Shots Decline
+
+-   **Finding**: Forwards in 2024 saw a reduction in total shot attempts.
+-   **Explanation**: While forwards have generally trended toward more perimeter involvement, their overall shot volume declined in 2024. This suggests a redistribution of offensive focus, with guards taking on a greater shooting burden.
+
+### 3. Guard's Increased Three Point Attempts
+
+-   **Finding**: Guards took significantly more three-pointers in 2024.
+-   **Explanation**: The emphasis on three-point shooting has grown, with guards playing a central role in this transformation. The increased reliance on perimeter shooting aligns with the NBA’s trend of prioritizing efficient scoring methods, such as three pointers, to maximize offensive output.
+
+## Conclusion
+
+The shot distribution trends for the Minnesota Timberwolves between 2019 and 2024 show a clear evolution toward perimeter oriented offenses. The shift away from traditional post up play, particularly for centers, and the rise in three point shooting for guards reflects broader changes in the NBA. Additionally, while forwards previously increased their perimeter shooting, their overall shot attempts declined, suggesting a shift in team strategy.
